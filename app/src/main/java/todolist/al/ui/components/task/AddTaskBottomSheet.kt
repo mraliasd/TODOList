@@ -89,8 +89,6 @@ fun AddTaskBottomSheet(
                 Text(category.label)
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
-
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
@@ -104,8 +102,6 @@ fun AddTaskBottomSheet(
                 Spacer(modifier = Modifier.width(8.dp))
                 Text("Reminder")
             }
-
-            Spacer(modifier = Modifier.height(16.dp))
 
             Row(
                 horizontalArrangement = Arrangement.End,

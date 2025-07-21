@@ -93,7 +93,7 @@ fun OnboardingScreen(navController: NavController) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 16.dp),
+                    .padding(vertical = 24.dp),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 if (pagerState.currentPage > 0) {
