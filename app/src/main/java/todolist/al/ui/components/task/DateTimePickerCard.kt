@@ -20,7 +20,6 @@ fun DateTimePickerCard(
     initialDateTime: LocalDateTime?,
     onDateTimeSelected: (LocalDateTime) -> Unit
 ) {
-    var expanded by remember { mutableStateOf(false) }
     var dateTime by remember { mutableStateOf(initialDateTime ?: LocalDateTime.now()) }
 
     val context = LocalContext.current
@@ -28,7 +27,33 @@ fun DateTimePickerCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { expanded = !expanded }
+            .clickable {
+                val calendar = Calendar.getInstance()
+                DatePickerDialog(
+                    context,
+                    { _, year, month, dayOfMonth ->
+                        TimePickerDialog(
+                            context,
+                            { _: TimePicker, hour: Int, minute: Int ->
+                                val updated = dateTime
+                                    .withYear(year)
+                                    .withMonth(month + 1)
+                                    .withDayOfMonth(dayOfMonth)
+                                    .withHour(hour)
+                                    .withMinute(minute)
+                                dateTime = updated
+                                onDateTimeSelected(updated)
+                            },
+                            dateTime.hour,
+                            dateTime.minute,
+                            true
+                        ).show()
+                    },
+                    dateTime.year,
+                    dateTime.monthValue - 1,
+                    dateTime.dayOfMonth
+                ).show()
+            }
             .padding(vertical = 8.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
@@ -44,46 +69,6 @@ fun DateTimePickerCard(
                 text = dateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")),
                 style = MaterialTheme.typography.bodyLarge
             )
-
-            if (expanded) {
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Button(onClick = {
-                        val calendar = Calendar.getInstance()
-                        DatePickerDialog(
-                            context,
-                            { _, year, month, dayOfMonth ->
-                                dateTime = dateTime.withYear(year).withMonth(month + 1).withDayOfMonth(dayOfMonth)
-                                onDateTimeSelected(dateTime)
-                            },
-                            dateTime.year,
-                            dateTime.monthValue - 1,
-                            dateTime.dayOfMonth
-                        ).show()
-                    }) {
-                        Text("Pick Date")
-                    }
-
-                    Button(onClick = {
-                        TimePickerDialog(
-                            context,
-                            { _: TimePicker, hour: Int, minute: Int ->
-                                dateTime = dateTime.withHour(hour).withMinute(minute)
-                                onDateTimeSelected(dateTime)
-                            },
-                            dateTime.hour,
-                            dateTime.minute,
-                            true
-                        ).show()
-                    }) {
-                        Text("Pick Time")
-                    }
-                }
-            }
         }
     }
 }
