@@ -58,25 +58,9 @@ fun OnboardingScreen(navController: NavController) {
         modifier = Modifier
             .fillMaxSize()
             .background(Color.Black)
-            .padding(16.dp)
+            .padding(40.dp)
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(8.dp),
-            contentAlignment = Alignment.TopEnd
-        ) {
-            TextButton(onClick = {
-                scope.launch {
-                    OnboardingPreferences.saveOnboardingState(context, true)
-                    navController.navigate("home") {
-                        popUpTo("intro") { inclusive = true }
-                    }
-                }
-            }) {
-                Text("SKIP", color = Color.White)
-            }
-        }
+
 
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -93,7 +77,7 @@ fun OnboardingScreen(navController: NavController) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 24.dp),
+                    .padding(vertical = 2.dp),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 if (pagerState.currentPage > 0) {
