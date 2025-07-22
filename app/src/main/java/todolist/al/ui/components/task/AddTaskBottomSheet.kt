@@ -1,5 +1,7 @@
 package todolist.al.ui.components.task
 
+import android.appwidget.AppWidgetManager
+import android.content.ComponentName
 import android.content.Context
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -13,6 +15,7 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import todolist.al.data.model.*
 import todolist.al.util.AlarmUtils
+import todolist.al.widget.TodoListWidget
 import java.time.LocalDateTime
 
 @Composable
@@ -122,6 +125,12 @@ fun AddTaskBottomSheet(
                                 reminder = reminderTime
                             )
                             onAdd(taskToSave)
+                            val appWidgetManager = AppWidgetManager.getInstance(context)
+                            val componentName = ComponentName(context, TodoListWidget::class.java)
+                            val widgetIds = appWidgetManager.getAppWidgetIds(componentName)
+                            for (widgetId in widgetIds) {
+                                TodoListWidget().onUpdate(context, appWidgetManager, intArrayOf(widgetId))
+                            }
 
                             if (isReminderEnabled && reminderTime != null) {
                                 AlarmUtils.setAlarm(context, taskToSave)

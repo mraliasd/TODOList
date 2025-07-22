@@ -30,6 +30,23 @@
         <receiver
             android:name=".receiver.NotificationReceiver"
             android:exported="false" />
+
+        <receiver
+            android:name=".widget.TodoListWidget"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/app_widget" />
+        </receiver>
+
+        <receiver
+            android:name=".widget.WidgetUpdateReceiver"
+            android:exported="false" />
+
     </application>
 
 </manifest>

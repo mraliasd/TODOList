@@ -93,7 +93,7 @@ fun CalendarScreen(
                     tasks = filteredTasks,
                     onToggle = { taskId -> viewModel.toggleTaskStatus(taskId, context) },
                     onEdit = { task -> navController.navigate("task/${task.id}") },
-                    onDelete = { taskId -> viewModel.deleteTask(taskId) }
+                    onDelete = { taskId -> viewModel.deleteTask(taskId) },
                 )
             }
         }

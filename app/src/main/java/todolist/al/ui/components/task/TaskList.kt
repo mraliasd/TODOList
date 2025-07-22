@@ -1,38 +1,41 @@
 package todolist.al.ui.components.task
 
-import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.*
-import androidx.compose.material.DismissDirection
-import androidx.compose.material.DismissValue
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material.rememberDismissState
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import todolist.al.data.model.SortOption
 import todolist.al.data.model.Task
-
-
 
 @Composable
 fun TaskList(
     tasks: List<Task>,
     onToggle: (Int) -> Unit,
     onEdit: (Task) -> Unit,
-    onDelete: (Int) -> Unit
+    onDelete: (Int) -> Unit,
+    sortOption: SortOption = SortOption.TIME
 ) {
     var showDeleteDialog by remember { mutableStateOf(false) }
     var pendingDeleteTaskId by remember { mutableStateOf<Int?>(null) }
 
     val activeTasks = tasks.filter { !it.isDone }
     val completedTasks = tasks.filter { it.isDone }
+
+    val sortedActiveTasks = when (sortOption) {
+        SortOption.TITLE -> activeTasks.sortedBy { it.title }
+        SortOption.TIME -> activeTasks.sortedBy { it.dueDate }
+        SortOption.PRIORITY -> activeTasks.sortedBy { it.priority }
+    }
+
+    val sortedCompletedTasks = when (sortOption) {
+        SortOption.TITLE -> completedTasks.sortedBy { it.title }
+        SortOption.TIME -> completedTasks.sortedBy { it.dueDate }
+        SortOption.PRIORITY -> completedTasks.sortedBy { it.priority }
+    }
 
     if (showDeleteDialog && pendingDeleteTaskId != null) {
         AlertDialog(
@@ -59,18 +62,11 @@ fun TaskList(
         )
     }
 
-    LaunchedEffect(tasks) {
-        val logText = tasks.joinToString(separator = "\n") { task ->
-            "- ${task.title} [${task.priority.name}]"
-        }
-        Log.d("TaskList", "Updated Task List:\n$logText")
-    }
-
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(vertical = 8.dp)
     ) {
-        if (activeTasks.isNotEmpty()) {
+        if (sortedActiveTasks.isNotEmpty()) {
             item {
                 Text(
                     "Active Tasks",
@@ -80,7 +76,7 @@ fun TaskList(
                 )
             }
 
-            items(activeTasks, key = { it.id }) { task ->
+            items(sortedActiveTasks, key = { it.id }) { task ->
                 TaskListItem(task, onToggle, onEdit, onDelete, onShowDialog = {
                     pendingDeleteTaskId = it
                     showDeleteDialog = true
@@ -88,7 +84,7 @@ fun TaskList(
             }
         }
 
-        if (completedTasks.isNotEmpty()) {
+        if (sortedCompletedTasks.isNotEmpty()) {
             item {
                 Text(
                     "Completed Tasks",
@@ -98,7 +94,7 @@ fun TaskList(
                 )
             }
 
-            items(completedTasks, key = { it.id }) { task ->
+            items(sortedCompletedTasks, key = { it.id }) { task ->
                 TaskListItem(task, onToggle, onEdit, onDelete, onShowDialog = {
                     pendingDeleteTaskId = it
                     showDeleteDialog = true
@@ -107,9 +103,3 @@ fun TaskList(
         }
     }
 }
-
-
-
-
-
-

@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="#FFFFFF"
+    android:padding="8dp">
+
+    <TextView
+        android:id="@+id/widget_app_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="TODOList"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:textColor="#000000"
+        android:paddingBottom="8dp"/>
+
+    <TextView
+        android:id="@+id/widget_section_title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Today Tasks"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        android:textColor="#444444"
+        android:layout_marginBottom="6dp"/>
+
+    <LinearLayout
+        android:id="@+id/widget_task_container"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical" />
+</LinearLayout>

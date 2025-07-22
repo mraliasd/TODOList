@@ -2,7 +2,6 @@ package todolist.al.ui.screens.home
 
 import android.app.Application
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.magnifier
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
@@ -18,8 +17,8 @@ import todolist.al.ui.components.HomeBottomBar
 import todolist.al.ui.components.HomeTopBar
 import todolist.al.viewmodel.TaskViewModel
 import todolist.al.viewmodel.TaskViewModelFactory
+import todolist.al.data.model.SortOption
 import java.time.LocalDate
-
 
 @Composable
 fun HomeScreen(
@@ -29,17 +28,23 @@ fun HomeScreen(
     val viewModel: TaskViewModel = viewModel(factory = TaskViewModelFactory(context))
 
     val allTasks = viewModel.tasks
+    var sortOption by remember { mutableStateOf(SortOption.TIME) }
 
     val today = LocalDate.now()
-    val todayTasks by remember(allTasks) {
+    val todayTasks by remember(allTasks, sortOption) {
         derivedStateOf {
-            allTasks.filter { it.dueDate?.toLocalDate() == today }
+            val filtered = allTasks.filter { it.dueDate?.toLocalDate() == today }
+            when (sortOption) {
+                SortOption.TITLE -> filtered.sortedBy { it.title.lowercase() }
+                SortOption.TIME -> filtered.sortedBy { it.dueDate }
+                SortOption.PRIORITY -> filtered.sortedBy { it.priority.ordinal }
+            }
         }
     }
 
     Scaffold(
         topBar = {
-            HomeTopBar()
+            HomeTopBar(onSortClick = { sortOption = it })
         },
         floatingActionButton = {
             FloatingActionButton(onClick = {
@@ -60,8 +65,7 @@ fun HomeScreen(
         Box(
             modifier = Modifier
                 .padding(paddingValues)
-                .padding(horizontal = 16.dp)
-                .padding(vertical = 16.dp)
+                .padding(horizontal = 16.dp, vertical = 16.dp)
                 .fillMaxSize()
         ) {
             if (todayTasks.isEmpty()) {

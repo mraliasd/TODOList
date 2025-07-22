@@ -9,6 +9,7 @@ import androidx.compose.material.icons.outlined.School
 import androidx.compose.material.icons.outlined.ShoppingCart
 import androidx.compose.material.icons.outlined.Work
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.vector.ImageVector
 import java.time.LocalDateTime
 
@@ -27,7 +28,9 @@ data class Task(
 enum class TaskPriority(val color: Color) {
     LOW(Color(0xFF81C784)),
     NORMAL(Color(0xFFFFF176)),
-    HIGH(Color(0xFFE57373))
+    HIGH(Color(0xFFE57373));
+
+    val intColor: Int get() = color.toArgb()
 }
 
 
