@@ -7,6 +7,13 @@
 - طراحی مدرن با استفاده از **Jetpack Compose**
 - دسته‌بندی وظایف به صورت «انجام‌شده» و «در حال انجام»
 - انتخاب **اهمیت** برای هر وظیفه (بالا، معمولی، پایین)
+- مرتب‌سازی لیست تسک‌ها براساس:
+
+زمان (صعودی/نزولی)
+
+اولویت (بالا تا پایین یا برعکس)
+
+- ویجت زنده برای مشاهده سریع وظایف در صفحه‌ی اصلی
 - قابلیت **یادآوری هوشمند (Reminder)** برای هر تسک:
   - نوتیفیکیشن با صدا برای تسک‌های با اهمیت بالا
   - نوتیف بی‌صدا یا محدود برای تسک‌های معمولی و کم‌اهمیت
@@ -61,6 +68,10 @@ A clean and simple Android app for task management, built with Jetpack Compose.
 - Modern UI using **Jetpack Compose**
 - Task grouping (done / pending)
 - Assign **priority levels** (high, normal, low)
+- Sort tasks by:
+  - Time (ascending / descending)
+  - Priority (high → low / low → high)
+- Live Widget to display your tasks on the home screen
 - Smart **reminder notifications**:
   - Sound notifications for high-priority tasks
   - Silent or limited notifications for normal/low tasks
