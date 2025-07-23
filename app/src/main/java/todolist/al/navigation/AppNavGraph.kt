@@ -9,6 +9,7 @@ import todolist.al.ui.screens.calendar.CalendarScreen
 import todolist.al.ui.screens.intro.IntroScreen
 import todolist.al.ui.screens.onboarding.OnboardingScreen
 import todolist.al.ui.screens.home.HomeScreen
+import todolist.al.ui.screens.auth.LoginPromptScreen
 import todolist.al.ui.screens.task.TaskScreen
 
 @Composable
@@ -50,6 +51,12 @@ fun AppNavGraph(
                 }
             )
         }
+
+
+        composable("login_prompt") {
+            LoginPromptScreen(navController = navController)
+        }
+
 
 
         composable("calendar") {

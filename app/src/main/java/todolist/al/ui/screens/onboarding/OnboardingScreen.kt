@@ -104,7 +104,7 @@ fun OnboardingScreen(navController: NavController) {
                     Button(onClick = {
                         scope.launch {
                             OnboardingPreferences.saveOnboardingState(context, true)
-                            navController.navigate("home") {
+                            navController.navigate("login_prompt") {
                                 popUpTo("intro") { inclusive = true }
                             }
                         }
