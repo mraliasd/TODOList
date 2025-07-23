@@ -21,31 +21,56 @@ import todolist.al.data.model.SortOption
 fun HomeTopBar(onSortClick: (SortOption) -> Unit) {
     val colorScheme = MaterialTheme.colorScheme
     var showSortDialog by remember { mutableStateOf(false) }
+    var selectedOption by remember { mutableStateOf(SortOption.entries.first()) }
 
     if (showSortDialog) {
         AlertDialog(
             onDismissRequest = { showSortDialog = false },
-            title = { Text("Sort Tasks") },
-            text = {
-                Column {
-                    SortOption.entries.forEach { option ->
-                        Text(
-                            text = option.label,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable {
-                                    onSortClick(option)
-                                    showSortDialog = false
-                                }
-                                .padding(8.dp)
-                        )
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        onSortClick(selectedOption)
+                        showSortDialog = false
                     }
+                ) {
+                    Text("Apply")
                 }
             },
-            confirmButton = {},
             dismissButton = {
                 TextButton(onClick = { showSortDialog = false }) {
                     Text("Cancel")
+                }
+            },
+            title = {
+                Text(
+                    text = "Sort Tasks",
+                    style = MaterialTheme.typography.titleLarge
+                )
+            },
+            text = {
+                Column {
+                    SortOption.entries.forEach { option ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    selectedOption = option
+                                }
+                                .padding(vertical = 8.dp, horizontal = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(
+                                selected = option == selectedOption,
+                                onClick = { selectedOption = option }
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = option.label,
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+                        }
+                        Divider()
+                    }
                 }
             }
         )

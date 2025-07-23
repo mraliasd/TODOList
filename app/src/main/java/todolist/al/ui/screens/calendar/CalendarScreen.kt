@@ -11,6 +11,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import todolist.al.data.model.SortOption
 import todolist.al.viewmodel.TaskViewModel
 import todolist.al.viewmodel.TaskViewModelFactory
 import todolist.al.ui.components.DatePickerButton
@@ -89,11 +90,12 @@ fun CalendarScreen(
             if (filteredTasks.isEmpty()) {
                 EmptyTaskPlaceholder()
             } else {
+                val sortOption : SortOption = SortOption.TIME
                 TaskList(
                     tasks = filteredTasks,
                     onToggle = { taskId -> viewModel.toggleTaskStatus(taskId, context) },
                     onEdit = { task -> navController.navigate("task/${task.id}") },
-                    onDelete = { taskId -> viewModel.deleteTask(taskId) },
+                    onDelete = { taskId -> viewModel.deleteTask(taskId) }
                 )
             }
         }

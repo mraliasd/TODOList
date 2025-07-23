@@ -9,6 +9,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import todolist.al.data.model.SortOption
 import todolist.al.viewmodel.TaskViewModel
 import todolist.al.viewmodel.TaskViewModelFactory
 import todolist.al.ui.components.task.*
@@ -60,6 +61,7 @@ fun TaskScreen(
 
             if (isBottomSheetVisible) {
                 AddTaskBottomSheet(
+                    navController = navController,
                     existingTask = taskToEdit,
                     onAdd = { task ->
                         if (taskToEdit != null) {

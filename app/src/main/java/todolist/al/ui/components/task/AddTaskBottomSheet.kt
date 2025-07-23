@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavHostController
 import todolist.al.data.model.*
 import todolist.al.util.AlarmUtils
 import todolist.al.widget.TodoListWidget
@@ -20,6 +21,7 @@ import java.time.LocalDateTime
 
 @Composable
 fun AddTaskBottomSheet(
+    navController: NavHostController,
     onAdd: (Task) -> Unit,
     onDismiss: () -> Unit,
     existingTask: Task? = null
@@ -135,8 +137,8 @@ fun AddTaskBottomSheet(
                             if (isReminderEnabled && reminderTime != null) {
                                 AlarmUtils.setAlarm(context, taskToSave)
                             }
-
                             onDismiss()
+                            navController.navigate("home")
                         }
                     },
                     enabled = title.text.isNotBlank(),

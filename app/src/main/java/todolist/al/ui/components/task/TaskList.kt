@@ -3,8 +3,7 @@ package todolist.al.ui.components.task
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.*
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -16,8 +15,7 @@ fun TaskList(
     tasks: List<Task>,
     onToggle: (Int) -> Unit,
     onEdit: (Task) -> Unit,
-    onDelete: (Int) -> Unit,
-    sortOption: SortOption = SortOption.TIME
+    onDelete: (Int) -> Unit
 ) {
     var showDeleteDialog by remember { mutableStateOf(false) }
     var pendingDeleteTaskId by remember { mutableStateOf<Int?>(null) }
@@ -25,21 +23,12 @@ fun TaskList(
     val activeTasks = tasks.filter { !it.isDone }
     val completedTasks = tasks.filter { it.isDone }
 
-    val sortedActiveTasks = when (sortOption) {
-        SortOption.TITLE -> activeTasks.sortedBy { it.title }
-        SortOption.TIME -> activeTasks.sortedBy { it.dueDate }
-        SortOption.PRIORITY -> activeTasks.sortedBy { it.priority }
-    }
-
-    val sortedCompletedTasks = when (sortOption) {
-        SortOption.TITLE -> completedTasks.sortedBy { it.title }
-        SortOption.TIME -> completedTasks.sortedBy { it.dueDate }
-        SortOption.PRIORITY -> completedTasks.sortedBy { it.priority }
-    }
-
     if (showDeleteDialog && pendingDeleteTaskId != null) {
         AlertDialog(
-            onDismissRequest = { showDeleteDialog = false },
+            onDismissRequest = {
+                showDeleteDialog = false
+                pendingDeleteTaskId = null
+            },
             title = { Text("Delete Task") },
             text = { Text("Are you sure you want to delete this task?") },
             confirmButton = {
@@ -66,7 +55,7 @@ fun TaskList(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(vertical = 8.dp)
     ) {
-        if (sortedActiveTasks.isNotEmpty()) {
+        if (activeTasks.isNotEmpty()) {
             item {
                 Text(
                     "Active Tasks",
@@ -76,15 +65,21 @@ fun TaskList(
                 )
             }
 
-            items(sortedActiveTasks, key = { it.id }) { task ->
-                TaskListItem(task, onToggle, onEdit, onDelete, onShowDialog = {
-                    pendingDeleteTaskId = it
-                    showDeleteDialog = true
-                })
+            items(activeTasks, key = { it.id }) { task ->
+                TaskListItem(
+                    task = task,
+                    onToggle = onToggle,
+                    onEdit = onEdit,
+                    onDelete = onDelete,
+                    onShowDialog = {
+                        pendingDeleteTaskId = it
+                        showDeleteDialog = true
+                    }
+                )
             }
         }
 
-        if (sortedCompletedTasks.isNotEmpty()) {
+        if (completedTasks.isNotEmpty()) {
             item {
                 Text(
                     "Completed Tasks",
@@ -94,11 +89,17 @@ fun TaskList(
                 )
             }
 
-            items(sortedCompletedTasks, key = { it.id }) { task ->
-                TaskListItem(task, onToggle, onEdit, onDelete, onShowDialog = {
-                    pendingDeleteTaskId = it
-                    showDeleteDialog = true
-                })
+            items(completedTasks, key = { it.id }) { task ->
+                TaskListItem(
+                    task = task,
+                    onToggle = onToggle,
+                    onEdit = onEdit,
+                    onDelete = onDelete,
+                    onShowDialog = {
+                        pendingDeleteTaskId = it
+                        showDeleteDialog = true
+                    }
+                )
             }
         }
     }

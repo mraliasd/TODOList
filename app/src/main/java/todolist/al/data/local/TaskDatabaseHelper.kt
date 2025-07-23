@@ -127,6 +127,20 @@ class TaskDatabaseHelper(context: Context) : SQLiteOpenHelper(
         stmt.executeUpdateDelete()
     }
 
+
+    fun getTasksSortedByTime(): List<Task> {
+        return getAllTasks().sortedBy { it.dueDate }
+    }
+
+    fun getTasksSortedByTitle(): List<Task> {
+        return getAllTasks().sortedBy { it.title.lowercase() }
+    }
+
+    fun getTasksSortedByPriority(): List<Task> {
+        return getAllTasks().sortedBy { it.priority.ordinal }
+    }
+
+
     companion object {
         private const val DATABASE_NAME = "tasks.db"
         private const val DATABASE_VERSION = 1

@@ -8,7 +8,6 @@ import android.appwidget.AppWidgetProvider
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
-import android.util.Log
 import android.widget.RemoteViews
 import kotlinx.coroutines.*
 import todolist.al.MainActivity
@@ -37,7 +36,6 @@ class TodoListWidget : AppWidgetProvider() {
     @SuppressLint("RemoteViewLayout")
     private fun updateWidget(context: Context, manager: AppWidgetManager, widgetId: Int) {
         val views = RemoteViews(context.packageName, R.layout.widget_layout)
-        Log.d("TodoListWidget", "Updating widget for ID: $widgetId")
         val intent = Intent(context, MainActivity::class.java)
         val pendingIntent = PendingIntent.getActivity(
             context, 0, intent, PendingIntent.FLAG_IMMUTABLE
@@ -47,7 +45,6 @@ class TodoListWidget : AppWidgetProvider() {
         CoroutineScope(Dispatchers.IO).launch {
             val db = TaskDatabaseHelper(context)
             val tasks = db.getAllTasks().filter { !it.isDone }.take(5)
-            Log.d("TodoListWidget", "Fetched ${tasks.size} tasks for widget")
             withContext(Dispatchers.Main) {
                 views.removeAllViews(R.id.widget_task_container)
 

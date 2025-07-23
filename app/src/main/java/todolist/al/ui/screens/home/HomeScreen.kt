@@ -44,7 +44,12 @@ fun HomeScreen(
 
     Scaffold(
         topBar = {
-            HomeTopBar(onSortClick = { sortOption = it })
+            HomeTopBar(
+                onSortClick = {
+                    sortOption = it
+                    viewModel.loadTasks(it)
+                }
+            )
         },
         floatingActionButton = {
             FloatingActionButton(onClick = {
@@ -72,11 +77,12 @@ fun HomeScreen(
                 EmptyTaskPlaceholder()
             } else {
                 TaskList(
-                    tasks = todayTasks,
+                    tasks = viewModel.tasks,
                     onToggle = { taskId -> viewModel.toggleTaskStatus(taskId, context) },
-                    onEdit = { task -> navController.navigate("task/${task.id}") },
-                    onDelete = { taskId -> viewModel.deleteTask(taskId) }
+                    onEdit = { task -> viewModel.updateTask(task) },
+                    onDelete = { id -> viewModel.deleteTask(id) }
                 )
+
             }
         }
     }

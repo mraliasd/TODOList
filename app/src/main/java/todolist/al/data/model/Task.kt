@@ -26,11 +26,10 @@ data class Task(
 )
 
 enum class TaskPriority(val color: Color) {
+    HIGH(Color(0xFFE57373)),
     LOW(Color(0xFF81C784)),
-    NORMAL(Color(0xFFFFF176)),
-    HIGH(Color(0xFFE57373));
+    NORMAL(Color(0xFFFFF176));
 
-    val intColor: Int get() = color.toArgb()
 }
 
 
