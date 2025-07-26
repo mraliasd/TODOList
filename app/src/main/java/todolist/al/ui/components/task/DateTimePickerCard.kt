@@ -29,30 +29,43 @@ fun DateTimePickerCard(
             .fillMaxWidth()
             .clickable {
                 val calendar = Calendar.getInstance()
-                DatePickerDialog(
+                val now = LocalDateTime.now()
+
+                val datePickerDialog = DatePickerDialog(
                     context,
                     { _, year, month, dayOfMonth ->
+                        val selectedDate = LocalDateTime.of(year, month + 1, dayOfMonth, 0, 0)
+
+                        val isToday = selectedDate.toLocalDate() == now.toLocalDate()
+
+                        val initialHour = if (isToday) now.hour else 0
+                        val initialMinute = if (isToday) now.minute else 0
+
                         TimePickerDialog(
                             context,
                             { _: TimePicker, hour: Int, minute: Int ->
-                                val updated = dateTime
-                                    .withYear(year)
-                                    .withMonth(month + 1)
-                                    .withDayOfMonth(dayOfMonth)
-                                    .withHour(hour)
-                                    .withMinute(minute)
+                                val updated = selectedDate.withHour(hour).withMinute(minute)
+
+                                if (updated.isBefore(now)) {
+                                    return@TimePickerDialog
+                                }
+
                                 dateTime = updated
                                 onDateTimeSelected(updated)
                             },
-                            dateTime.hour,
-                            dateTime.minute,
+                            initialHour,
+                            initialMinute,
                             true
                         ).show()
                     },
                     dateTime.year,
                     dateTime.monthValue - 1,
                     dateTime.dayOfMonth
-                ).show()
+                )
+
+                datePickerDialog.datePicker.minDate = System.currentTimeMillis()
+
+                datePickerDialog.show()
             }
             .padding(vertical = 8.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)

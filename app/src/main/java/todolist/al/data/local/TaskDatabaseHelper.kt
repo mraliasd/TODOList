@@ -18,20 +18,22 @@ class TaskDatabaseHelper(context: Context) : SQLiteOpenHelper(
     override fun onCreate(db: SQLiteDatabase) {
         db.execSQL(
             """
-            CREATE TABLE tasks (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                title TEXT NOT NULL,
-                description TEXT,
-                isDone INTEGER DEFAULT 0,
-                createdAt TEXT,
-                dueDate TEXT,
-                category INTEGER DEFAULT 0,
-                priority TEXT,
-                reminder TEXT
-            )
-            """.trimIndent()
+        CREATE TABLE tasks (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT NOT NULL,
+            description TEXT,
+            isDone INTEGER DEFAULT 0,
+            createdAt TEXT,
+            dueDate TEXT,
+            category INTEGER DEFAULT 0,
+            priority TEXT,
+            reminder TEXT,
+            parentId INTEGER
+        )
+        """.trimIndent()
         )
     }
+
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
         db.execSQL("DROP TABLE IF EXISTS tasks")
@@ -41,9 +43,9 @@ class TaskDatabaseHelper(context: Context) : SQLiteOpenHelper(
     fun insertTask(task: Task) {
         val db = writableDatabase
         val sql = """
-            INSERT INTO tasks (title, description, isDone, createdAt, dueDate, category, priority, reminder)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        """
+        INSERT INTO tasks (title, description, isDone, createdAt, dueDate, category, priority, reminder, parentId)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """
         val stmt = db.compileStatement(sql)
         stmt.bindString(1, task.title)
         stmt.bindString(2, task.description)
@@ -53,13 +55,16 @@ class TaskDatabaseHelper(context: Context) : SQLiteOpenHelper(
         task.category?.ordinal?.let { stmt.bindLong(6, it.toLong()) }
         stmt.bindString(7, task.priority.name)
         stmt.bindString(8, task.reminder?.toString() ?: "")
+        if (task.parentId != null) stmt.bindLong(9, task.parentId.toLong()) else stmt.bindNull(9)
         stmt.executeInsert()
+
     }
 
     fun getAllTasks(): List<Task> {
         val db = readableDatabase
         val cursor = db.rawQuery("SELECT * FROM tasks ORDER BY createdAt DESC", null)
         val tasks = mutableListOf<Task>()
+
 
         while (cursor.moveToNext()) {
             val id = cursor.getInt(cursor.getColumnIndexOrThrow("id"))
@@ -74,6 +79,8 @@ class TaskDatabaseHelper(context: Context) : SQLiteOpenHelper(
             val priority = TaskPriority.valueOf(cursor.getString(cursor.getColumnIndexOrThrow("priority")))
             val reminderRaw = cursor.getString(cursor.getColumnIndexOrThrow("reminder"))
             val reminder = if (reminderRaw.isNullOrEmpty()) null else LocalDateTime.parse(reminderRaw)
+            val parentIdColumnIndex = cursor.getColumnIndexOrThrow("parentId")
+            val parentId = if (!cursor.isNull(parentIdColumnIndex)) cursor.getInt(parentIdColumnIndex) else null
 
             tasks.add(
                 Task(
@@ -85,7 +92,9 @@ class TaskDatabaseHelper(context: Context) : SQLiteOpenHelper(
                     dueDate = dueDate,
                     category = category,
                     priority = priority,
-                    reminder = reminder
+                    reminder = reminder,
+                    parentId = parentId
+
                 )
             )
         }
@@ -96,17 +105,18 @@ class TaskDatabaseHelper(context: Context) : SQLiteOpenHelper(
     fun updateTask(task: Task) {
         val db = writableDatabase
         val sql = """
-            UPDATE tasks SET 
-                title = ?, 
-                description = ?, 
-                isDone = ?, 
-                createdAt = ?, 
-                dueDate = ?, 
-                category = ?, 
-                priority = ?, 
-                reminder = ?
-            WHERE id = ?
-        """
+        UPDATE tasks SET 
+            title = ?, 
+            description = ?, 
+            isDone = ?, 
+            createdAt = ?, 
+            dueDate = ?, 
+            category = ?, 
+            priority = ?, 
+            reminder = ?,
+            parentId = ?
+        WHERE id = ?
+    """
         val stmt = db.compileStatement(sql)
         stmt.bindString(1, task.title)
         stmt.bindString(2, task.description)
@@ -116,8 +126,10 @@ class TaskDatabaseHelper(context: Context) : SQLiteOpenHelper(
         task.category?.ordinal?.let { stmt.bindLong(6, it.toLong()) }
         stmt.bindString(7, task.priority.name)
         stmt.bindString(8, task.reminder?.toString() ?: "")
-        stmt.bindLong(9, task.id.toLong())
+        if (task.parentId != null) stmt.bindLong(9, task.parentId.toLong()) else stmt.bindNull(9)
+        stmt.bindLong(10, task.id.toLong())
         stmt.executeUpdateDelete()
+
     }
 
     fun deleteTask(taskId: Int) {
@@ -139,6 +151,7 @@ class TaskDatabaseHelper(context: Context) : SQLiteOpenHelper(
     fun getTasksSortedByPriority(): List<Task> {
         return getAllTasks().sortedBy { it.priority.ordinal }
     }
+
 
 
     companion object {

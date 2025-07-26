@@ -10,6 +10,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -29,6 +30,7 @@ import java.time.format.DateTimeFormatter
 @Composable
 fun TaskItem(
     task: Task,
+    subTasks: List<Task> = emptyList(),
     onToggleDone: () -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
@@ -73,8 +75,6 @@ fun TaskItem(
                             color = Color.Gray
                         )
                     }
-
-
                 }
 
                 task.category?.let { category ->
@@ -98,12 +98,37 @@ fun TaskItem(
                             text = task.description,
                             style = MaterialTheme.typography.bodySmall
                         )
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
+
+                    if (subTasks.isNotEmpty()) {
+                        Text(
+                            text = "Subtasks",
+                            style = MaterialTheme.typography.labelMedium,
+                            modifier = Modifier.padding(bottom = 4.dp)
+                        )
+                        subTasks.forEach { subtask ->
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(bottom = 4.dp)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(8.dp)
+                                        .background(subtask.priority.color, CircleShape)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(subtask.title, style = MaterialTheme.typography.bodySmall)
+                            }
+                        }
                     }
                 }
             }
         }
     }
+
 }
+
 
 
 @Composable

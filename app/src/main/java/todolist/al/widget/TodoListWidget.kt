@@ -36,6 +36,7 @@ class TodoListWidget : AppWidgetProvider() {
     @SuppressLint("RemoteViewLayout")
     private fun updateWidget(context: Context, manager: AppWidgetManager, widgetId: Int) {
         val views = RemoteViews(context.packageName, R.layout.widget_layout)
+
         val intent = Intent(context, MainActivity::class.java)
         val pendingIntent = PendingIntent.getActivity(
             context, 0, intent, PendingIntent.FLAG_IMMUTABLE
@@ -44,26 +45,60 @@ class TodoListWidget : AppWidgetProvider() {
 
         CoroutineScope(Dispatchers.IO).launch {
             val db = TaskDatabaseHelper(context)
-            val tasks = db.getAllTasks().filter { !it.isDone }.take(5)
+            val allTasks = db.getAllTasks().filter { !it.isDone }
+            val mainTasks = allTasks.filter { it.parentId == null }.take(5)
+
             withContext(Dispatchers.Main) {
                 views.removeAllViews(R.id.widget_task_container)
 
-                tasks.forEach { task ->
-                    val itemView = RemoteViews(context.packageName, R.layout.widget_task_item)
+                mainTasks.forEach { task ->
+                    val blockLayoutId = if (isRTL(task.title)) {
+                        R.layout.widget_task_item_rtl
+                    } else {
+                        R.layout.widget_task_item_ltr
+                    }
 
-                    itemView.setTextViewText(R.id.widget_task_title, task.title)
+                    val blockView = RemoteViews(context.packageName, blockLayoutId)
 
+
+                    blockView.setTextViewText(R.id.widget_task_title, task.title)
                     val timeFormatted = task.dueDate?.toLocalTime()?.format(DateTimeFormatter.ofPattern("HH:mm")) ?: ""
-                    itemView.setTextViewText(R.id.widget_task_time, timeFormatted)
+                    blockView.setTextViewText(R.id.widget_task_time, timeFormatted)
 
-                    views.addView(R.id.widget_task_container, itemView)
+                    val subTasks = allTasks.filter { it.parentId == task.id }
+
+                    subTasks.forEach { subtask ->
+                        val layoutId = if (isRTL(subtask.title)) {
+                            R.layout.widget_task_item_rtl
+                        } else {
+                            R.layout.widget_task_item_ltr
+                        }
+
+                        val subView = RemoteViews(context.packageName, layoutId)
+                        subView.setTextViewText(R.id.widget_task_title, "• ${subtask.title}")
+                        val subTime = subtask.dueDate?.toLocalTime()?.format(DateTimeFormatter.ofPattern("HH:mm")) ?: ""
+                        subView.setTextViewText(R.id.widget_task_time, subTime)
+
+                        blockView.addView(R.id.widget_subtask_container, subView)
+                    }
+
+                    views.addView(R.id.widget_task_container, blockView)
                 }
-
 
                 manager.updateAppWidget(widgetId, views)
             }
         }
     }
+
+
+
+
+    private fun isRTL(text: String): Boolean {
+        val firstLetter = text.firstOrNull { it.isLetter() } ?: return false
+        val dir = Character.getDirectionality(firstLetter)
+        return dir == Character.DIRECTIONALITY_RIGHT_TO_LEFT || dir == Character.DIRECTIONALITY_RIGHT_TO_LEFT_ARABIC
+    }
+
 
     private fun schedulePeriodicUpdate(context: Context) {
         val intent = Intent(context, WidgetUpdateReceiver::class.java)

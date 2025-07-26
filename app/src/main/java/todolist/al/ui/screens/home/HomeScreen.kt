@@ -79,7 +79,7 @@ fun HomeScreen(
                 TaskList(
                     tasks = viewModel.tasks,
                     onToggle = { taskId -> viewModel.toggleTaskStatus(taskId, context) },
-                    onEdit = { task -> viewModel.updateTask(task) },
+                    onEdit = { task -> navController.navigate("task/${task.id}") },
                     onDelete = { id -> viewModel.deleteTask(id) }
                 )
 

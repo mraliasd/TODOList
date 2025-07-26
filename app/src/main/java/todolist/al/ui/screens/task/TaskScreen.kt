@@ -16,6 +16,7 @@ import todolist.al.ui.components.task.*
 import todolist.al.ui.components.EmptyTaskPlaceholder
 import todolist.al.ui.components.HomeBottomBar
 
+
 @Composable
 fun TaskScreen(
     navController: NavHostController,
@@ -75,7 +76,9 @@ fun TaskScreen(
                     onDismiss = {
                         isBottomSheetVisible = false
                         navController.popBackStack()
-                    }
+                    },
+                    viewModel = viewModel,
+                    allTasks = tasks
                 )
             }
         }

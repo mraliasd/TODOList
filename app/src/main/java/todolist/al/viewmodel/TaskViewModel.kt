@@ -49,27 +49,54 @@ class TaskViewModel(application: Application) : AndroidViewModel(application) {
         dbHelper.deleteTask(taskId)
         refreshTasks()
         TaskChangeBroadcaster.notifyChange(getApplication())
-
     }
 
     fun updateTask(updatedTask: Task) {
         dbHelper.updateTask(updatedTask)
         refreshTasks()
         TaskChangeBroadcaster.notifyChange(getApplication())
-
     }
 
     fun toggleTaskStatus(taskId: Int, context: Context) {
         val task = _tasks.find { it.id == taskId }
         task?.let {
             val updated = it.copy(isDone = !it.isDone)
-            if (it.isDone) {
-                AlarmUtils.cancelAlarms(context, task)
+            if (updated.isDone) {
+                AlarmUtils.cancelAlarms(context, updated)
             }
             dbHelper.updateTask(updated)
             refreshTasks()
             TaskChangeBroadcaster.notifyChange(getApplication())
-
         }
+    }
+
+    fun getSubtasks(parentId: Int): List<Task> {
+        return dbHelper.getAllTasks().filter { it.parentId == parentId }
+    }
+
+    fun getMainTasks(): List<Task> {
+        return dbHelper.getAllTasks().filter { it.parentId == null }
+    }
+
+    fun getTaskById(taskId: Int): Task? {
+        return dbHelper.getAllTasks().find { it.id == taskId }
+    }
+
+    fun addSubtask(subtask: Task) {
+        dbHelper.insertTask(subtask)
+        refreshTasks()
+        TaskChangeBroadcaster.notifyChange(getApplication())
+    }
+
+    fun updateSubtask(subtask: Task) {
+        dbHelper.updateTask(subtask)
+        refreshTasks()
+        TaskChangeBroadcaster.notifyChange(getApplication())
+    }
+
+    fun deleteSubtask(subtaskId: Int) {
+        dbHelper.deleteTask(subtaskId)
+        refreshTasks()
+        TaskChangeBroadcaster.notifyChange(getApplication())
     }
 }

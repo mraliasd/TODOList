@@ -27,11 +27,13 @@ import todolist.al.data.model.Task
 @Composable
 fun TaskListItem(
     task: Task,
+    allTasks: List<Task>,
     onToggle: (Int) -> Unit,
     onEdit: (Task) -> Unit,
     onDelete: (Int) -> Unit,
     onShowDialog: (Int) -> Unit
 ) {
+
     val dismissState = rememberDismissState(
         confirmStateChange = { dismissValue ->
             when (dismissValue) {
@@ -49,7 +51,7 @@ fun TaskListItem(
             }
         }
     )
-
+    val relatedSubTasks = allTasks.filter { it.parentId == task.id }
     SwipeToDismiss(
         state = dismissState,
         directions = setOf(
@@ -94,6 +96,7 @@ fun TaskListItem(
         dismissContent = {
             TaskItem(
                 task = task,
+                subTasks  = relatedSubTasks,
                 onToggleDone = { onToggle(task.id) }
             )
         }

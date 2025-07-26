@@ -22,7 +22,8 @@ data class Task(
     val dueDate: LocalDateTime? = null,
     val category: TaskCategory? = null,
     val priority: TaskPriority = TaskPriority.NORMAL,
-    val reminder: LocalDateTime? = null
+    val reminder: LocalDateTime? = null,
+    val parentId: Int? = null
 )
 
 enum class TaskPriority(val color: Color) {

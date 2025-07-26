@@ -90,7 +90,6 @@ fun CalendarScreen(
             if (filteredTasks.isEmpty()) {
                 EmptyTaskPlaceholder()
             } else {
-                val sortOption : SortOption = SortOption.TIME
                 TaskList(
                     tasks = filteredTasks,
                     onToggle = { taskId -> viewModel.toggleTaskStatus(taskId, context) },

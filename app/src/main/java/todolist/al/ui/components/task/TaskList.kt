@@ -7,7 +7,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import todolist.al.data.model.SortOption
 import todolist.al.data.model.Task
 
 @Composable
@@ -20,8 +19,8 @@ fun TaskList(
     var showDeleteDialog by remember { mutableStateOf(false) }
     var pendingDeleteTaskId by remember { mutableStateOf<Int?>(null) }
 
-    val activeTasks = tasks.filter { !it.isDone }
-    val completedTasks = tasks.filter { it.isDone }
+    val activeTasks = tasks.filter { !it.isDone && it.parentId == null }
+    val completedTasks = tasks.filter { it.isDone && it.parentId == null }
 
     if (showDeleteDialog && pendingDeleteTaskId != null) {
         AlertDialog(
@@ -65,7 +64,7 @@ fun TaskList(
                 )
             }
 
-            items(activeTasks, key = { it.id }) { task ->
+            items(activeTasks, key = { "main_${it.id}" }) { task ->
                 TaskListItem(
                     task = task,
                     onToggle = onToggle,
@@ -74,7 +73,8 @@ fun TaskList(
                     onShowDialog = {
                         pendingDeleteTaskId = it
                         showDeleteDialog = true
-                    }
+                    },
+                    allTasks = tasks
                 )
             }
         }
@@ -89,7 +89,7 @@ fun TaskList(
                 )
             }
 
-            items(completedTasks, key = { it.id }) { task ->
+            items(completedTasks, key = { "done_${it.id}" }) { task ->
                 TaskListItem(
                     task = task,
                     onToggle = onToggle,
@@ -98,7 +98,8 @@ fun TaskList(
                     onShowDialog = {
                         pendingDeleteTaskId = it
                         showDeleteDialog = true
-                    }
+                    },
+                    allTasks = tasks
                 )
             }
         }
