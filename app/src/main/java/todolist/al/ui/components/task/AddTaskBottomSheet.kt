@@ -1,14 +1,10 @@
 package todolist.al.ui.components.task
 
-import android.appwidget.AppWidgetManager
-import android.content.ComponentName
-import android.content.Context
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -21,10 +17,7 @@ import androidx.navigation.NavHostController
 import todolist.al.data.model.*
 import todolist.al.util.AlarmUtils
 import todolist.al.viewmodel.TaskViewModel
-import todolist.al.widget.TodoListWidget
-import java.time.DayOfWeek
 import java.time.LocalDateTime
-import java.time.LocalTime
 
 @Composable
 fun AddTaskBottomSheet(
@@ -46,12 +39,13 @@ fun AddTaskBottomSheet(
     var isReminderEnabled by remember { mutableStateOf(existingTask?.reminder != null) }
 
     var recurringType by remember { mutableStateOf(existingTask?.recurringType ?: RecurringType.NONE) }
+    var recurringMode by remember { mutableStateOf(existingTask?.recurringMode) }
     var recurringInterval by remember { mutableStateOf(existingTask?.recurringInterval) }
-    var selectedDays by remember { mutableStateOf(emptyList<DayOfWeek>()) }
-    var selectedTimes by remember { mutableStateOf(emptyList<LocalTime>()) }
+    var selectedDays by remember { mutableStateOf(existingTask?.recurringDays ?: emptyList()) }
+    var selectedTimes by remember { mutableStateOf(existingTask?.recurringTimes ?: emptyList()) }
+    var recurringEndDate by remember { mutableStateOf(existingTask?.dueDate?.toLocalDate()?.plusMonths(3)) }
 
     data class SubTaskInput(var title: String, var priority: TaskPriority)
-
     val subTasks = remember { mutableStateListOf<SubTaskInput>() }
 
     LaunchedEffect(existingTask, allTasks) {
@@ -129,13 +123,23 @@ fun AddTaskBottomSheet(
 
                 RecurringOptions(
                     recurringType = recurringType,
-                    onTypeChange = { recurringType = it },
+                    onTypeChange = {
+                        recurringType = it
+                        recurringMode = null
+                        recurringInterval = null
+                        selectedDays = emptyList()
+                        selectedTimes = emptyList()
+                    },
+                    recurringMode = recurringMode,
+                    onModeChange = { recurringMode = it },
                     recurringInterval = recurringInterval,
                     onIntervalChange = { recurringInterval = it },
                     selectedDays = selectedDays,
                     onDaysChange = { selectedDays = it },
                     selectedTimes = selectedTimes,
-                    onTimesChange = { selectedTimes = it }
+                    onTimesChange = { selectedTimes = it },
+                    recurringEndDate = recurringEndDate,
+                    onEndDateChange = { recurringEndDate = it }
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))
@@ -202,8 +206,7 @@ fun AddTaskBottomSheet(
                     onClick = {
                         if (title.text.isNotBlank()) {
                             val reminderTime = if (isReminderEnabled) selectedDate else null
-                            val newId = existingTask?.id ?: ((viewModel.tasks.maxOfOrNull { it.id }
-                                ?: 0) + 1)
+                            val newId = existingTask?.id ?: ((viewModel.tasks.maxOfOrNull { it.id } ?: 0) + 1)
 
                             val taskToSave = Task(
                                 id = newId,
@@ -215,7 +218,14 @@ fun AddTaskBottomSheet(
                                 reminder = reminderTime,
                                 parentId = existingTask?.parentId,
                                 recurringType = recurringType,
-                                recurringInterval = recurringInterval
+                                recurringMode = recurringMode,
+                                recurringInterval = recurringInterval,
+                                recurringDays = selectedDays,
+                                recurringTimes = selectedTimes,
+                                originalTime = selectedDate.toLocalTime(),
+                                // تاریخ پایان تکرار (اگر حالت SINGLE_DAY نیست)
+                                recurringEndDate = if (recurringMode != CustomRecurringMode.SINGLE_DAY)
+                                    recurringEndDate?.atTime(23, 59) else null
                             )
 
                             if (existingTask != null) {

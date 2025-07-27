@@ -42,11 +42,8 @@ fun TaskItem(
             .clickable { expanded = !expanded },
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
-        Column(
-            modifier = Modifier
-                .padding(12.dp)
-                .fillMaxWidth()
-        ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(
                     modifier = Modifier
@@ -77,9 +74,9 @@ fun TaskItem(
                     }
                 }
 
-                task.category?.let { category ->
+                task.category?.let {
                     Spacer(modifier = Modifier.width(12.dp))
-                    CategoryChip(category)
+                    CategoryChip(it)
                 }
 
                 Spacer(modifier = Modifier.width(12.dp))
@@ -92,18 +89,41 @@ fun TaskItem(
             }
 
             AnimatedVisibility(visible = expanded) {
-                Column(modifier = Modifier.padding(top = 8.dp)) {
+                Column(modifier = Modifier.padding(top = 12.dp)) {
+
                     if (task.description.isNotBlank()) {
                         Text(
                             text = task.description,
-                            style = MaterialTheme.typography.bodySmall
+                            style = MaterialTheme.typography.bodySmall,
+                            color = colorScheme.onSurfaceVariant
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                     }
 
-                    if (subTasks.isNotEmpty()) {
+                    task.reminder?.let {
                         Text(
-                            text = "Subtasks",
+                            text = "Reminder: ${it.format(DateTimeFormatter.ofPattern("MMM dd • HH:mm"))}",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = Color(0xFFD32F2F)
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                    }
+
+                    if (task.recurringType != null && task.recurringType.name != "NONE") {
+                        Text(
+                            text = "Repeats: ${task.recurringType.name.lowercase().replaceFirstChar { it.uppercase() }}" +
+                                    (if (task.recurringType.name == "CUSTOM" && task.recurringInterval != null)
+                                        " every ${task.recurringInterval} days" else ""),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = Color(0xFF388E3C)
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                    }
+
+                    if (subTasks.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "Subtasks:",
                             style = MaterialTheme.typography.labelMedium,
                             modifier = Modifier.padding(bottom = 4.dp)
                         )
@@ -126,8 +146,8 @@ fun TaskItem(
             }
         }
     }
-
 }
+
 
 
 

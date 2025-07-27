@@ -14,6 +14,8 @@ import java.time.DayOfWeek
 import java.time.LocalDateTime
 import java.time.LocalTime
 
+// مدل نهایی تسک با پشتیبانی از حالات مختلف تکرار
+
 data class Task(
     val id: Int = 0,
     val title: String,
@@ -26,9 +28,12 @@ data class Task(
     val reminder: LocalDateTime? = null,
     val parentId: Int? = null,
     val recurringType: RecurringType = RecurringType.NONE,
+    val recurringMode: CustomRecurringMode? = null,
     val recurringInterval: Int? = null,
     val recurringDays: List<DayOfWeek> = emptyList(),
-    val recurringTimes: List<LocalTime> = emptyList()
+    val recurringTimes: List<LocalTime> = emptyList(),
+    val originalTime: LocalTime? = null,
+    val recurringEndDate: LocalDateTime? = null
 )
 
 enum class TaskPriority(val color: Color) {
@@ -39,6 +44,12 @@ enum class TaskPriority(val color: Color) {
 
 enum class RecurringType {
     NONE, DAILY, WEEKLY, MONTHLY, CUSTOM
+}
+
+enum class CustomRecurringMode {
+    INTERVAL,
+    WEEKDAYS,
+    SINGLE_DAY
 }
 
 enum class TaskCategory(

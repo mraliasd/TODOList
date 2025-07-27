@@ -2,6 +2,8 @@ package todolist.al.ui.screens.calendar
 
 import android.app.Application
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
@@ -15,10 +17,11 @@ import todolist.al.data.model.SortOption
 import todolist.al.viewmodel.TaskViewModel
 import todolist.al.viewmodel.TaskViewModelFactory
 import todolist.al.ui.components.DatePickerButton
-import todolist.al.ui.components.task.TaskList
+import todolist.al.ui.components.task.TaskItem
 import todolist.al.ui.components.EmptyTaskPlaceholder
 import todolist.al.ui.components.HomeBottomBar
 import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -32,17 +35,20 @@ fun CalendarScreen(
     var isSearching by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
 
-    val allTasks = viewModel.tasks.sortedBy { it.dueDate }
+    val allTasks = viewModel.tasks
 
-    val filteredTasks by remember(searchQuery, selectedDate, allTasks) {
-        derivedStateOf {
-            allTasks.filter { task ->
+    val groupedTasks = remember(selectedDate, searchQuery, allTasks) {
+        allTasks
+            .filter { task ->
                 val matchDate = selectedDate?.let { task.dueDate?.toLocalDate() == it } ?: true
                 val matchQuery = searchQuery.isBlank() || task.title.contains(searchQuery, ignoreCase = true)
-                matchDate && matchQuery
+                matchDate && matchQuery && task.dueDate != null
             }
-        }
+            .sortedBy { it.dueDate }
+            .groupBy { it.dueDate!!.toLocalDate() }
+            .toSortedMap()
     }
+
 
     Scaffold(
         topBar = {
@@ -67,10 +73,11 @@ fun CalendarScreen(
                 )
             }
         },
-        bottomBar = { HomeBottomBar(
-            onHomeClick = { navController.navigate("home") },
-            onCalendarClick = { /* Already here */ },
-            selectedScreen = "calendar"
+        bottomBar = {
+            HomeBottomBar(
+                onHomeClick = { navController.navigate("home") },
+                onCalendarClick = { /* Already here */ },
+                selectedScreen = "calendar"
             )
         }
     ) { paddingValues ->
@@ -87,15 +94,28 @@ fun CalendarScreen(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            if (filteredTasks.isEmpty()) {
+            if (groupedTasks.isEmpty()) {
                 EmptyTaskPlaceholder()
             } else {
-                TaskList(
-                    tasks = filteredTasks,
-                    onToggle = { taskId -> viewModel.toggleTaskStatus(taskId, context) },
-                    onEdit = { task -> navController.navigate("task/${task.id}") },
-                    onDelete = { taskId -> viewModel.deleteTask(taskId) }
-                )
+                LazyColumn(modifier = Modifier.fillMaxSize()) {
+                    groupedTasks.forEach { (date, tasksForDate) ->
+                        val sortedTasks = tasksForDate.sortedBy { it.dueDate }
+                        item {
+                            Text(
+                                text = date?.format(DateTimeFormatter.ofPattern("EEEE, MMM dd")) ?: "Unknown Date",
+                                style = MaterialTheme.typography.titleMedium,
+                                modifier = Modifier.padding(vertical = 8.dp)
+                            )
+                        }
+                        items(sortedTasks) { task ->
+                            TaskItem(
+                                task = task,
+                                subTasks = viewModel.getSubtasks(task.id),
+                                onToggleDone = { viewModel.toggleTaskStatus(task.id, context) }
+                            )
+                        }
+                    }
+                }
             }
         }
     }

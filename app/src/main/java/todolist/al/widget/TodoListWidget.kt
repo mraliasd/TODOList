@@ -45,7 +45,11 @@ class TodoListWidget : AppWidgetProvider() {
 
         CoroutineScope(Dispatchers.IO).launch {
             val db = TaskDatabaseHelper(context)
-            val allTasks = db.getAllTasks().filter { !it.isDone }
+            val today = java.time.LocalDate.now()
+
+            val allTasks = db.getAllTasks()
+                .filter { !it.isDone && it.dueDate?.toLocalDate() == today }
+
             val mainTasks = allTasks.filter { it.parentId == null }.take(5)
 
             withContext(Dispatchers.Main) {
@@ -60,9 +64,9 @@ class TodoListWidget : AppWidgetProvider() {
 
                     val blockView = RemoteViews(context.packageName, blockLayoutId)
 
-
                     blockView.setTextViewText(R.id.widget_task_title, task.title)
-                    val timeFormatted = task.dueDate?.toLocalTime()?.format(DateTimeFormatter.ofPattern("HH:mm")) ?: ""
+                    val timeFormatted = task.dueDate?.toLocalTime()
+                        ?.format(DateTimeFormatter.ofPattern("HH:mm")) ?: ""
                     blockView.setTextViewText(R.id.widget_task_time, timeFormatted)
 
                     val subTasks = allTasks.filter { it.parentId == task.id }
@@ -76,7 +80,8 @@ class TodoListWidget : AppWidgetProvider() {
 
                         val subView = RemoteViews(context.packageName, layoutId)
                         subView.setTextViewText(R.id.widget_task_title, "• ${subtask.title}")
-                        val subTime = subtask.dueDate?.toLocalTime()?.format(DateTimeFormatter.ofPattern("HH:mm")) ?: ""
+                        val subTime = subtask.dueDate?.toLocalTime()
+                            ?.format(DateTimeFormatter.ofPattern("HH:mm")) ?: ""
                         subView.setTextViewText(R.id.widget_task_time, subTime)
 
                         blockView.addView(R.id.widget_subtask_container, subView)
@@ -89,6 +94,7 @@ class TodoListWidget : AppWidgetProvider() {
             }
         }
     }
+
 
 
 

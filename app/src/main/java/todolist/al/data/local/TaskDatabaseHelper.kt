@@ -17,25 +17,30 @@ class TaskDatabaseHelper(context: Context) : SQLiteOpenHelper(
     override fun onCreate(db: SQLiteDatabase) {
         db.execSQL(
             """
-            CREATE TABLE tasks (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                title TEXT NOT NULL,
-                description TEXT,
-                isDone INTEGER DEFAULT 0,
-                createdAt TEXT,
-                dueDate TEXT,
-                category INTEGER DEFAULT 0,
-                priority TEXT,
-                reminder TEXT,
-                parentId INTEGER,
-                recurringType TEXT DEFAULT 'NONE',
-                recurringInterval INTEGER,
-                recurringDays TEXT,
-                recurringTimes TEXT
-            )
-            """.trimIndent()
+        CREATE TABLE tasks (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT NOT NULL,
+            description TEXT,
+            isDone INTEGER DEFAULT 0,
+            createdAt TEXT,
+            dueDate TEXT,
+            category INTEGER DEFAULT 0,
+            priority TEXT,
+            reminder TEXT,
+            parentId INTEGER,
+            recurringType TEXT DEFAULT 'NONE',
+            recurringMode TEXT,
+            recurringInterval INTEGER,
+            recurringDays TEXT,
+            recurringTimes TEXT,
+            originalTime TEXT,
+            recurringEndDate TEXT
+        )
+        """.trimIndent()
         )
     }
+
+
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
         db.execSQL("DROP TABLE IF EXISTS tasks")
@@ -45,29 +50,39 @@ class TaskDatabaseHelper(context: Context) : SQLiteOpenHelper(
     fun insertTask(task: Task) {
         val db = writableDatabase
         val sql = """
-            INSERT INTO tasks (title, description, isDone, createdAt, dueDate, category, priority, reminder, parentId, recurringType, recurringInterval, recurringDays, recurringTimes)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """
+                INSERT INTO tasks (
+                    title, description, isDone, createdAt, dueDate,
+                    category, priority, reminder, parentId, 
+                    recurringType, recurringMode, recurringInterval,
+                    recurringDays, recurringTimes, originalTime, recurringEndDate
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """
+
         val stmt = db.compileStatement(sql)
         stmt.bindString(1, task.title)
         stmt.bindString(2, task.description)
         stmt.bindLong(3, if (task.isDone) 1 else 0)
         stmt.bindString(4, task.createdAt.toString())
         stmt.bindString(5, task.dueDate?.toString() ?: "")
-        task.category?.ordinal?.let { stmt.bindLong(6, it.toLong()) }
+        task.category?.ordinal?.let { stmt.bindLong(6, it.toLong()) } ?: stmt.bindNull(6)
         stmt.bindString(7, task.priority.name)
         stmt.bindString(8, task.reminder?.toString() ?: "")
         if (task.parentId != null) stmt.bindLong(9, task.parentId.toLong()) else stmt.bindNull(9)
         stmt.bindString(10, task.recurringType.name)
-        if (task.recurringType == RecurringType.CUSTOM && task.recurringInterval != null) {
-            stmt.bindLong(11, task.recurringInterval.toLong())
+        stmt.bindString(11, task.recurringMode?.name ?: "")
+        if (task.recurringMode == CustomRecurringMode.INTERVAL && task.recurringInterval != null) {
+            stmt.bindLong(12, task.recurringInterval.toLong())
         } else {
-            stmt.bindNull(11)
+            stmt.bindNull(12)
         }
-        stmt.bindString(12, JSONArray(task.recurringDays.map { it.name }).toString())
-        stmt.bindString(13, JSONArray(task.recurringTimes.map { it.toString() }).toString())
+        stmt.bindString(13, JSONArray(task.recurringDays.map { it.name }).toString())
+        stmt.bindString(14, JSONArray(task.recurringTimes.map { it.toString() }).toString())
+        stmt.bindString(15, task.originalTime?.toString() ?: "")
+        stmt.bindString(16, task.recurringEndDate?.toString() ?: "")
         stmt.executeInsert()
     }
+
 
     fun getAllTasks(): List<Task> {
         val db = readableDatabase
@@ -101,6 +116,13 @@ class TaskDatabaseHelper(context: Context) : SQLiteOpenHelper(
             val recurringTimes = JSONArray(recurringTimesJson).let { arr ->
                 List(arr.length()) { i -> LocalTime.parse(arr.getString(i)) }
             }
+            val recurringModeStr = cursor.getString(cursor.getColumnIndexOrThrow("recurringMode"))
+            val recurringMode = if (recurringModeStr.isNullOrBlank()) null else CustomRecurringMode.valueOf(recurringModeStr)
+            val originalTimeRaw = cursor.getString(cursor.getColumnIndexOrThrow("originalTime"))
+            val originalTime = if (originalTimeRaw.isNullOrEmpty()) null else LocalTime.parse(originalTimeRaw)
+            val recurringEndDateRaw = cursor.getString(cursor.getColumnIndexOrThrow("recurringEndDate"))
+            val recurringEndDate = if (recurringEndDateRaw.isNullOrEmpty()) null else LocalDateTime.parse(recurringEndDateRaw)
+
 
             tasks.add(
                 Task(
@@ -115,11 +137,15 @@ class TaskDatabaseHelper(context: Context) : SQLiteOpenHelper(
                     reminder = reminder,
                     parentId = parentId,
                     recurringType = recurringType,
+                    recurringMode = recurringMode,
                     recurringInterval = recurringInterval,
                     recurringDays = recurringDays,
-                    recurringTimes = recurringTimes
+                    recurringTimes = recurringTimes,
+                    originalTime = originalTime,
+                    recurringEndDate = recurringEndDate
                 )
             )
+
         }
         cursor.close()
         return tasks
@@ -128,42 +154,39 @@ class TaskDatabaseHelper(context: Context) : SQLiteOpenHelper(
     fun updateTask(task: Task) {
         val db = writableDatabase
         val sql = """
-            UPDATE tasks SET 
-                title = ?, 
-                description = ?, 
-                isDone = ?, 
-                createdAt = ?, 
-                dueDate = ?, 
-                category = ?, 
-                priority = ?, 
-                reminder = ?,
-                parentId = ?,
-                recurringType = ?,
-                recurringInterval = ?,
-                recurringDays = ?,
-                recurringTimes = ?
-            WHERE id = ?
-        """
+    UPDATE tasks SET 
+        title = ?, description = ?, isDone = ?, createdAt = ?, dueDate = ?, 
+        category = ?, priority = ?, reminder = ?, parentId = ?, 
+        recurringType = ?, recurringMode = ?, recurringInterval = ?, 
+        recurringDays = ?, recurringTimes = ?, originalTime = ?, recurringEndDate = ?
+    WHERE id = ?
+"""
         val stmt = db.compileStatement(sql)
         stmt.bindString(1, task.title)
         stmt.bindString(2, task.description)
         stmt.bindLong(3, if (task.isDone) 1 else 0)
         stmt.bindString(4, task.createdAt.toString())
         stmt.bindString(5, task.dueDate?.toString() ?: "")
-        task.category?.ordinal?.let { stmt.bindLong(6, it.toLong()) }
+        task.category?.ordinal?.let { stmt.bindLong(6, it.toLong()) } ?: stmt.bindNull(6)
         stmt.bindString(7, task.priority.name)
         stmt.bindString(8, task.reminder?.toString() ?: "")
         if (task.parentId != null) stmt.bindLong(9, task.parentId.toLong()) else stmt.bindNull(9)
         stmt.bindString(10, task.recurringType.name)
-        if (task.recurringType == RecurringType.CUSTOM && task.recurringInterval != null) {
-            stmt.bindLong(11, task.recurringInterval.toLong())
+        stmt.bindString(11, task.recurringMode?.name ?: "")
+        if (task.recurringMode == CustomRecurringMode.INTERVAL && task.recurringInterval != null) {
+            stmt.bindLong(12, task.recurringInterval.toLong())
         } else {
-            stmt.bindNull(11)
+            stmt.bindNull(12)
         }
-        stmt.bindString(12, JSONArray(task.recurringDays.map { it.name }).toString())
-        stmt.bindString(13, JSONArray(task.recurringTimes.map { it.toString() }).toString())
-        stmt.bindLong(14, task.id.toLong())
+        stmt.bindString(13, JSONArray(task.recurringDays.map { it.name }).toString())
+        stmt.bindString(14, JSONArray(task.recurringTimes.map { it.toString() }).toString())
+        stmt.bindLong(15, task.id.toLong())
+        stmt.bindString(15, task.originalTime?.toString() ?: "")
+        stmt.bindLong(16, task.id.toLong())
+        stmt.bindString(16, task.recurringEndDate?.toString() ?: "")
+        stmt.bindLong(17, task.id.toLong())
         stmt.executeUpdateDelete()
+
     }
 
     fun deleteTask(taskId: Int) {

@@ -10,6 +10,7 @@ import todolist.al.data.model.*
 import todolist.al.util.AlarmUtils
 import todolist.al.widget.TaskChangeBroadcaster
 import java.time.DayOfWeek
+import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
 
@@ -43,9 +44,16 @@ class TaskViewModel(application: Application) : AndroidViewModel(application) {
 
     fun addTask(task: Task) {
         dbHelper.insertTask(task)
+
+        if (task.recurringType != RecurringType.NONE) {
+            val nextTasks = generateRecurringInstances(task)
+            nextTasks.forEach { dbHelper.insertTask(it) }
+        }
+
         refreshTasks()
         TaskChangeBroadcaster.notifyChange(getApplication())
     }
+
 
     fun deleteTask(taskId: Int) {
         dbHelper.deleteTask(taskId)
@@ -81,71 +89,149 @@ class TaskViewModel(application: Application) : AndroidViewModel(application) {
 
     private fun generateRecurringInstances(task: Task): List<Task> {
         val now = LocalDateTime.now()
+        val endDate = task.recurringEndDate ?: now.plusMonths(3)
+
         return when (task.recurringType) {
             RecurringType.DAILY -> {
-                listOf(task.copy(id = 0, isDone = false, dueDate = task.dueDate?.plusDays(1), createdAt = now))
+                val list = mutableListOf<Task>()
+                var nextDate = task.dueDate?.plusDays(1) ?: return emptyList()
+                val baseTime = task.originalTime ?: nextDate.toLocalTime()
+
+                while (nextDate.isBefore(endDate)) {
+                    list.add(task.copy(
+                        id = 0,
+                        isDone = false,
+                        dueDate = LocalDateTime.of(nextDate.toLocalDate(), baseTime),
+                        createdAt = now
+                    ))
+                    nextDate = nextDate.plusDays(1)
+                }
+
+                list
             }
+
             RecurringType.WEEKLY -> {
-                listOf(task.copy(id = 0, isDone = false, dueDate = task.dueDate?.plusWeeks(1), createdAt = now))
+                val list = mutableListOf<Task>()
+                var nextDate = task.dueDate?.plusWeeks(1) ?: return emptyList()
+                val baseTime = task.originalTime ?: nextDate.toLocalTime()
+
+                while (nextDate.isBefore(endDate)) {
+                    list.add(task.copy(
+                        id = 0,
+                        isDone = false,
+                        dueDate = LocalDateTime.of(nextDate.toLocalDate(), baseTime),
+                        createdAt = now
+                    ))
+                    nextDate = nextDate.plusWeeks(1)
+                }
+
+                list
             }
+
             RecurringType.MONTHLY -> {
-                listOf(task.copy(id = 0, isDone = false, dueDate = task.dueDate?.plusMonths(1), createdAt = now))
+                val list = mutableListOf<Task>()
+                var nextDate = task.dueDate?.plusMonths(1) ?: return emptyList()
+                val baseTime = task.originalTime ?: nextDate.toLocalTime()
+
+                while (nextDate.isBefore(endDate)) {
+                    list.add(task.copy(
+                        id = 0,
+                        isDone = false,
+                        dueDate = LocalDateTime.of(nextDate.toLocalDate(), baseTime),
+                        createdAt = now
+                    ))
+                    nextDate = nextDate.plusMonths(1)
+                }
+
+                list
             }
+
             RecurringType.CUSTOM -> {
-                if (task.recurringDays.isNotEmpty() && task.recurringTimes.isNotEmpty()) {
-                    val today = now.toLocalDate()
-                    val nextDates = mutableListOf<LocalDateTime>()
-                    task.recurringDays.forEach { day ->
-                        val nextDay = getNextDayOfWeek(today, day)
-                        task.recurringTimes.forEach { time ->
-                            nextDates.add(LocalDateTime.of(nextDay, time))
+                when (task.recurringMode) {
+                    CustomRecurringMode.INTERVAL -> {
+                        val interval = task.recurringInterval ?: return emptyList()
+                        val baseDate = task.dueDate?.toLocalDate() ?: return emptyList()
+                        val baseTime = task.originalTime ?: task.dueDate?.toLocalTime() ?: LocalTime.now()
+
+                        val list = mutableListOf<Task>()
+                        var currentDate = baseDate.plusDays(interval.toLong())
+
+                        while (currentDate.atTime(baseTime).isBefore(endDate)) {
+                            list.add(task.copy(
+                                id = 0,
+                                isDone = false,
+                                dueDate = LocalDateTime.of(currentDate, baseTime),
+                                createdAt = now
+                            ))
+                            currentDate = currentDate.plusDays(interval.toLong())
+                        }
+
+                        list
+                    }
+
+                    CustomRecurringMode.WEEKDAYS -> {
+                        val baseTime = task.originalTime ?: task.dueDate?.toLocalTime() ?: LocalTime.now()
+                        val startDate = (task.dueDate ?: now).toLocalDate()
+                        val times = task.recurringTimes.ifEmpty { listOf(baseTime) }
+
+                        val list = mutableListOf<Task>()
+                        var current = startDate
+
+                        while (current.atTime(baseTime).isBefore(endDate)) {
+                            if (task.recurringDays.contains(current.dayOfWeek)) {
+                                times.forEach { time ->
+                                    val dateTime = LocalDateTime.of(current, time)
+                                    if (dateTime.isAfter(now) && dateTime.isBefore(endDate)) {
+                                        list.add(task.copy(
+                                            id = 0,
+                                            isDone = false,
+                                            dueDate = dateTime,
+                                            createdAt = now
+                                        ))
+                                    }
+                                }
+                            }
+                            current = current.plusDays(1)
+                        }
+
+                        list
+                    }
+
+                    CustomRecurringMode.SINGLE_DAY -> {
+                        val baseDay = task.dueDate?.toLocalDate() ?: return emptyList()
+                        val times = task.recurringTimes.ifEmpty {
+                            listOf(
+                                task.originalTime ?: task.dueDate.toLocalTime() ?: LocalTime.now()
+                            )
+                        }
+
+                        times.mapNotNull { time ->
+                            val dateTime = LocalDateTime.of(baseDay, time)
+                            if (dateTime.isAfter(now)) {
+                                task.copy(
+                                    id = 0,
+                                    isDone = false,
+                                    dueDate = dateTime,
+                                    createdAt = now
+                                )
+                            } else null
                         }
                     }
-                    nextDates.map {
-                        task.copy(id = 0, isDone = false, dueDate = it, createdAt = now)
-                    }.filter { it.dueDate?.isAfter(now) == true }
-                } else {
-                    val interval = task.recurringInterval ?: return emptyList()
-                    listOf(task.copy(id = 0, isDone = false, dueDate = task.dueDate?.plusDays(interval.toLong()), createdAt = now))
+
+                    null -> emptyList()
                 }
             }
+
             RecurringType.NONE -> emptyList()
         }
     }
 
-    private fun getNextDayOfWeek(currentDate: java.time.LocalDate, targetDay: DayOfWeek): java.time.LocalDate {
-        val currentDay = currentDate.dayOfWeek
-        val daysUntilNext = (targetDay.value - currentDay.value + 7) % 7
-        return currentDate.plusDays(daysUntilNext.toLong().coerceAtLeast(1))
-    }
+
 
     fun getSubtasks(parentId: Int): List<Task> {
         return dbHelper.getAllTasks().filter { it.parentId == parentId }
     }
 
-    fun getMainTasks(): List<Task> {
-        return dbHelper.getAllTasks().filter { it.parentId == null }
-    }
 
-    fun getTaskById(taskId: Int): Task? {
-        return dbHelper.getAllTasks().find { it.id == taskId }
-    }
 
-    fun addSubtask(subtask: Task) {
-        dbHelper.insertTask(subtask)
-        refreshTasks()
-        TaskChangeBroadcaster.notifyChange(getApplication())
-    }
-
-    fun updateSubtask(subtask: Task) {
-        dbHelper.updateTask(subtask)
-        refreshTasks()
-        TaskChangeBroadcaster.notifyChange(getApplication())
-    }
-
-    fun deleteSubtask(subtaskId: Int) {
-        dbHelper.deleteTask(subtaskId)
-        refreshTasks()
-        TaskChangeBroadcaster.notifyChange(getApplication())
-    }
 }
