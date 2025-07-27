@@ -22,7 +22,9 @@ import todolist.al.data.model.*
 import todolist.al.util.AlarmUtils
 import todolist.al.viewmodel.TaskViewModel
 import todolist.al.widget.TodoListWidget
+import java.time.DayOfWeek
 import java.time.LocalDateTime
+import java.time.LocalTime
 
 @Composable
 fun AddTaskBottomSheet(
@@ -42,6 +44,11 @@ fun AddTaskBottomSheet(
     var category by remember { mutableStateOf(existingTask?.category ?: TaskCategory.WORK) }
     var isCategoryDialogOpen by remember { mutableStateOf(false) }
     var isReminderEnabled by remember { mutableStateOf(existingTask?.reminder != null) }
+
+    var recurringType by remember { mutableStateOf(existingTask?.recurringType ?: RecurringType.NONE) }
+    var recurringInterval by remember { mutableStateOf(existingTask?.recurringInterval) }
+    var selectedDays by remember { mutableStateOf(emptyList<DayOfWeek>()) }
+    var selectedTimes by remember { mutableStateOf(emptyList<LocalTime>()) }
 
     data class SubTaskInput(var title: String, var priority: TaskPriority)
 
@@ -120,7 +127,19 @@ fun AddTaskBottomSheet(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // نمایش ساب‌تسک‌ها
+                RecurringOptions(
+                    recurringType = recurringType,
+                    onTypeChange = { recurringType = it },
+                    recurringInterval = recurringInterval,
+                    onIntervalChange = { recurringInterval = it },
+                    selectedDays = selectedDays,
+                    onDaysChange = { selectedDays = it },
+                    selectedTimes = selectedTimes,
+                    onTimesChange = { selectedTimes = it }
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
                 subTasks.forEachIndexed { index, subtask ->
                     Column(
                         modifier = Modifier
@@ -183,7 +202,8 @@ fun AddTaskBottomSheet(
                     onClick = {
                         if (title.text.isNotBlank()) {
                             val reminderTime = if (isReminderEnabled) selectedDate else null
-                            val newId = existingTask?.id ?: (viewModel.tasks.maxOfOrNull { it.id } ?: 0) + 1
+                            val newId = existingTask?.id ?: ((viewModel.tasks.maxOfOrNull { it.id }
+                                ?: 0) + 1)
 
                             val taskToSave = Task(
                                 id = newId,
@@ -193,7 +213,9 @@ fun AddTaskBottomSheet(
                                 priority = priority,
                                 category = category,
                                 reminder = reminderTime,
-                                parentId = existingTask?.parentId
+                                parentId = existingTask?.parentId,
+                                recurringType = recurringType,
+                                recurringInterval = recurringInterval
                             )
 
                             if (existingTask != null) {
@@ -202,13 +224,11 @@ fun AddTaskBottomSheet(
                                 viewModel.addTask(taskToSave)
                             }
 
-                            // حذف ساب‌تسک‌های قبلی در صورت ویرایش
                             if (existingTask != null) {
                                 val oldSubtasks = viewModel.tasks.filter { it.parentId == existingTask.id }
                                 oldSubtasks.forEach { viewModel.deleteTask(it.id) }
                             }
 
-                            // افزودن ساب‌تسک‌های جدید
                             subTasks
                                 .filter { it.title.isNotBlank() }
                                 .forEach {
@@ -248,7 +268,7 @@ fun AddTaskBottomSheet(
             confirmButton = {},
             text = {
                 Column {
-                    TaskCategory.values().forEach { item ->
+                    TaskCategory.entries.forEach { item ->
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier
@@ -274,4 +294,3 @@ fun AddTaskBottomSheet(
         )
     }
 }
-

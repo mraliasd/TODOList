@@ -9,9 +9,10 @@ import androidx.compose.material.icons.outlined.School
 import androidx.compose.material.icons.outlined.ShoppingCart
 import androidx.compose.material.icons.outlined.Work
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.vector.ImageVector
+import java.time.DayOfWeek
 import java.time.LocalDateTime
+import java.time.LocalTime
 
 data class Task(
     val id: Int = 0,
@@ -23,16 +24,22 @@ data class Task(
     val category: TaskCategory? = null,
     val priority: TaskPriority = TaskPriority.NORMAL,
     val reminder: LocalDateTime? = null,
-    val parentId: Int? = null
+    val parentId: Int? = null,
+    val recurringType: RecurringType = RecurringType.NONE,
+    val recurringInterval: Int? = null,
+    val recurringDays: List<DayOfWeek> = emptyList(),
+    val recurringTimes: List<LocalTime> = emptyList()
 )
 
 enum class TaskPriority(val color: Color) {
     HIGH(Color(0xFFE57373)),
     LOW(Color(0xFF81C784)),
-    NORMAL(Color(0xFFFFF176));
-
+    NORMAL(Color(0xFFFFF176))
 }
 
+enum class RecurringType {
+    NONE, DAILY, WEEKLY, MONTHLY, CUSTOM
+}
 
 enum class TaskCategory(
     val label: String,

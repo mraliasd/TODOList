@@ -6,10 +6,12 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.lifecycle.AndroidViewModel
 import todolist.al.data.local.TaskDatabaseHelper
-import todolist.al.data.model.SortOption
-import todolist.al.data.model.Task
+import todolist.al.data.model.*
 import todolist.al.util.AlarmUtils
 import todolist.al.widget.TaskChangeBroadcaster
+import java.time.DayOfWeek
+import java.time.LocalDateTime
+import java.time.LocalTime
 
 class TaskViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -61,13 +63,60 @@ class TaskViewModel(application: Application) : AndroidViewModel(application) {
         val task = _tasks.find { it.id == taskId }
         task?.let {
             val updated = it.copy(isDone = !it.isDone)
+
             if (updated.isDone) {
                 AlarmUtils.cancelAlarms(context, updated)
+
+                if (updated.recurringType != RecurringType.NONE) {
+                    val nextTasks = generateRecurringInstances(updated)
+                    nextTasks.forEach { nextTask -> addTask(nextTask) }
+                }
             }
+
             dbHelper.updateTask(updated)
             refreshTasks()
             TaskChangeBroadcaster.notifyChange(getApplication())
         }
+    }
+
+    private fun generateRecurringInstances(task: Task): List<Task> {
+        val now = LocalDateTime.now()
+        return when (task.recurringType) {
+            RecurringType.DAILY -> {
+                listOf(task.copy(id = 0, isDone = false, dueDate = task.dueDate?.plusDays(1), createdAt = now))
+            }
+            RecurringType.WEEKLY -> {
+                listOf(task.copy(id = 0, isDone = false, dueDate = task.dueDate?.plusWeeks(1), createdAt = now))
+            }
+            RecurringType.MONTHLY -> {
+                listOf(task.copy(id = 0, isDone = false, dueDate = task.dueDate?.plusMonths(1), createdAt = now))
+            }
+            RecurringType.CUSTOM -> {
+                if (task.recurringDays.isNotEmpty() && task.recurringTimes.isNotEmpty()) {
+                    val today = now.toLocalDate()
+                    val nextDates = mutableListOf<LocalDateTime>()
+                    task.recurringDays.forEach { day ->
+                        val nextDay = getNextDayOfWeek(today, day)
+                        task.recurringTimes.forEach { time ->
+                            nextDates.add(LocalDateTime.of(nextDay, time))
+                        }
+                    }
+                    nextDates.map {
+                        task.copy(id = 0, isDone = false, dueDate = it, createdAt = now)
+                    }.filter { it.dueDate?.isAfter(now) == true }
+                } else {
+                    val interval = task.recurringInterval ?: return emptyList()
+                    listOf(task.copy(id = 0, isDone = false, dueDate = task.dueDate?.plusDays(interval.toLong()), createdAt = now))
+                }
+            }
+            RecurringType.NONE -> emptyList()
+        }
+    }
+
+    private fun getNextDayOfWeek(currentDate: java.time.LocalDate, targetDay: DayOfWeek): java.time.LocalDate {
+        val currentDay = currentDate.dayOfWeek
+        val daysUntilNext = (targetDay.value - currentDay.value + 7) % 7
+        return currentDate.plusDays(daysUntilNext.toLong().coerceAtLeast(1))
     }
 
     fun getSubtasks(parentId: Int): List<Task> {
