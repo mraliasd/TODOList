@@ -14,7 +14,6 @@ import java.time.DayOfWeek
 import java.time.LocalDateTime
 import java.time.LocalTime
 
-// مدل نهایی تسک با پشتیبانی از حالات مختلف تکرار
 
 data class Task(
     val id: Int = 0,
